@@ -10,62 +10,78 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 種目名の日英翻訳辞書 (完全版) ---
+# --- 種目名の日英翻訳辞書 (完全版: Wとshの徹底排除) ---
 EVENT_TRANSLATION = {
-    # 短距離
+    # --- 短距離 ---
     "50m": "50m", "55m": "55m", "60m": "60m",
-    "100m": "100m", "200m": "200m", "300m": "300m", "400m": "400m",
+    "100m": "100m", "100y": "100ヤード",
+    "200m": "200m", "300m": "300m", "400m": "400m",
     "500m": "500m", "600m": "600m",
+    
+    # --- ショートトラック短距離 (sh -> ST) ---
     "50m sh": "50m (ST)", "55m sh": "55m (ST)", "60m sh": "60m (ST)",
     "200m sh": "200m (ST)", "300m sh": "300m (ST)", "400m sh": "400m (ST)",
+    "300y sh": "300ヤード (ST)", "440y sh": "440ヤード (ST)",
     
-    # ハードル
+    # --- ハードル ---
     "50mH": "50mハードル", "55mH": "55mハードル", "60mH": "60mハードル",
-    "110mH": "110mハードル", "400mH": "400mハードル", "300mH": "300mハードル",
+    "100mH": "100mハードル", # 女子用
+    "110mH": "110mハードル", 
+    "200mH": "200mハードル", "300mH": "300mハードル", "400mH": "400mハードル",
+    
+    # --- ショートトラックハードル ---
     "50mH sh": "50mハードル (ST)", "55mH sh": "55mハードル (ST)", "60mH sh": "60mハードル (ST)",
 
-    # 中長距離
+    # --- 中長距離 ---
     "800m": "800m", "1000m": "1000m", "1500m": "1500m",
     "Mile": "1マイル", "2000m": "2000m", "3000m": "3000m", 
     "2 Miles": "2マイル", "5000m": "5000m", "10000m": "10000m",
+    
+    # --- ショートトラック中長距離 ---
     "800m sh": "800m (ST)", "1000m sh": "1000m (ST)", "1500m sh": "1500m (ST)",
     "Mile sh": "1マイル (ST)", "3000m sh": "3000m (ST)", "2 Miles sh": "2マイル (ST)",
     "5000m sh": "5000m (ST)",
 
-    # 障害
+    # --- 障害 ---
     "2000m SC": "2000m障害", "3000m SC": "3000m障害",
 
-    # ロード・マラソン
+    # --- ロード・マラソン ---
     "5 km": "5kmロード", "10 km": "10kmロード", "15 km": "15kmロード",
-    "10 Miles": "10マイルロード", "20 km": "20kmロード",
-    "HM": "ハーフマラソン", "25 km": "25kmロード", "30 km": "30kmロード",
-    "Marathon": "マラソン", "35 km": "35kmロード", "50 km": "50kmロード", "100 km": "100kmロード",
+    "10 Miles": "10マイルロード", "20 km": "20kmロード", "25 km": "25kmロード",
+    "30 km": "30kmロード", "35 km": "35kmロード", "50 km": "50kmロード", "100 km": "100kmロード",
+    "HM": "ハーフマラソン", "Marathon": "マラソン", 
     "Road Relay": "ロードリレー",
 
-    # 競歩
-    "3000mW": "3000m競歩", "5000mW": "5000m競歩", "10,000mW": "10000m競歩",
-    "20,000mW": "20000m競歩", "30,000mW": "30000m競歩", "35,000mW": "35000m競歩", "50,000mW": "50000m競歩",
-    "10km W": "10km競歩", "15km W": "15km競歩", "20km W": "20km競歩", 
+    # --- 競歩 (トラック) mW ---
+    "3000mW": "3000m競歩", "5000mW": "5000m競歩", "10000mW": "10000m競歩", "10,000mW": "10000m競歩",
+    "15,000mW": "15000m競歩", "20,000mW": "20000m競歩", 
+    "30,000mW": "30000m競歩", "35,000mW": "35000m競歩", "50,000mW": "50000m競歩",
+    
+    # --- 競歩 (ロード) W / MarW / HMW ---
+    "3km W": "3km競歩", "5km W": "5km競歩", "10km W": "10km競歩", 
+    "15km W": "15km競歩", "20km W": "20km競歩", "25km W": "25km競歩",
     "30km W": "30km競歩", "35km W": "35km競歩", "50km W": "50km競歩",
     "MarW": "マラソン競歩", "HMW": "ハーフマラソン競歩",
 
-    # 跳躍
+    # --- 跳躍 ---
     "HJ": "走高跳", "PV": "棒高跳", "LJ": "走幅跳", "TJ": "三段跳",
-    "Standing LJ": "立幅跳",
+    "Standing LJ": "立幅跳", "Standing HJ": "立高跳", "Standing TJ": "立三段跳",
 
-    # 投てき
+    # --- 投てき ---
     "SP": "砲丸投", "DT": "円盤投", "HT": "ハンマー投", "JT": "やり投",
-    "Wt": "重量投",
+    "Wt": "重量投", "Wt sh": "重量投 (ST)",
 
-    # 混成
+    # --- 混成 ---
     "Dec.": "十種競技", "Hept.": "七種競技", "Pent.": "五種競技",
     "Hept. sh": "七種競技 (ST)", "Pent. sh": "五種競技 (ST)",
 
-    # リレー
+    # --- リレー ---
     "4x100m": "4x100mリレー", "4x200m": "4x200mリレー", "4x400m": "4x400mリレー",
+    "4x800m": "4x800mリレー", "4x1500m": "4x1500mリレー",
     "4x200m sh": "4x200mリレー (ST)", "4x400m sh": "4x400mリレー (ST)",
     "4x400mix": "男女混合4x400mリレー", "4x400mix sh": "男女混合4x400mリレー (ST)",
-    "Distance Medley Relay": "メドレーリレー"
+    "Distance Medley Relay": "メドレーリレー",
+    "Sprint Medley Relay": "スプリントメドレーリレー"
 }
 
 # --- カテゴリ定義 ---
@@ -78,24 +94,29 @@ def classify_event(event_name_jp):
         return "混成競技"
     
     # 2. 跳躍
-    if "跳" in name:
+    if "跳" in name and "競歩" not in name:
         return "跳躍"
         
     # 3. 投てき
     if "投" in name:
         return "投てき"
         
-    # 4. ロード・競歩
-    if "競歩" in name or "マラソン" in name or "ロード" in name:
-        return "ロード・競歩"
+    # 4. 競歩（トラック）
+    # "m競歩" で終わるもの (例: 10000m競歩) はトラック。
+    if "m競歩" in name and "km" not in name and "マラソン" not in name and "ハーフ" not in name:
+        return "競歩（トラック）"
         
-    # 5. 中長距離 (800m以上, 障害含む)
-    # ※マイル(約1600m)も含む
+    # 5. ロード（長距離・競歩）
+    # ロード走、マラソン、およびロード競歩 (km競歩, マラソン競歩)
+    if "ロード" in name or "マラソン" in name or "km競歩" in name:
+        return "ロード（長距離・競歩）"
+        
+    # 6. 中長距離 (800m以上, 障害含む)
     middle_long_keywords = ["800m", "1000m", "1500m", "2000m", "3000m", "5000m", "10000m", "マイル", "障害"]
     if any(k in name for k in middle_long_keywords):
         return "中長距離・障害"
         
-    # 6. 短距離・ハードル・リレー (それ以外)
+    # 7. 短距離・ハードル・リレー (それ以外)
     return "短距離・ハードル・リレー"
 
 # カテゴリの並び順
@@ -104,7 +125,8 @@ CATEGORY_ORDER = [
     "中長距離・障害",
     "跳躍",
     "投てき",
-    "ロード・競歩",
+    "競歩（トラック）",
+    "ロード（長距離・競歩）",
     "混成競技"
 ]
 
@@ -140,31 +162,42 @@ def parse_record_from_csv(record_str):
 
 def get_event_type(event_name):
     name = event_name.lower().strip()
+    
     # A. フィールド
     field_keywords = ['hj', 'pv', 'lj', 'tj', 'sp', 'dt', 'ht', 'jt', 'shot', 'disc', 'jave', 'hamm', 'pole', 'jump', 'throw', 'standing', 'wt']
     if any(k in name for k in field_keywords) and not "dec" in name and not "hept" in name and not "pent" in name:
         return "field"
+    
     # B. 混成
     if "dec" in name or "hept" in name or "pent" in name:
         return "score"
-    # C. 長時間
+    
+    # C. 長時間 (時:分:秒)
+    # 競歩関連の判定
     is_walk = 'walk' in name or 'km w' in name or 'marw' in name or 'hmw' in name or name.endswith('w') or '000mw' in name
     if is_walk:
+        # 短い競歩は分:秒 (3000m, 5000m, 10000m, 3km, 5km, 10km)
+        # 10,000mW (トラック) もトップ選手は38分とかなので分:秒でOKだが、市民ランナーレベルだと1時間超えるかも？
+        # ここではWA採点表のレンジに合わせて、10000m/10kmまでは分:秒、それ以上(15km~, 20000m~)は時:分:秒にする
         if any(k in name for k in ['3000', '5000', '10000', '10,000', '3km', '5km', '10km']):
              return "time_ms"
         else:
              return "time_hms"
+
+    # ロード・長時間走
     long_dist_keywords = ['marathon', 'hm', 'hour', '15 km', '20 km', '25 km', '30 km', '35 km', '50 km', '100 km', 'miles']
     if name == 'hm': return "time_hms"
     if any(k in name for k in long_dist_keywords):
         return "time_hms"
-    # D. 中長距離
+        
+    # D. 中長距離 (分:秒)
     middle_keywords = ['800m', '1000m', '1500m', '2000m', '3000m', '5000m', '10000m', 'mile', 'sc', 'steeple', '4x', 'relay']
     if any(k in name for k in middle_keywords):
         return "time_ms"
     if '5 km' in name or '10 km' in name:
         return "time_ms"
-    # E. 短距離
+        
+    # E. 短距離 (秒)
     return "time_s"
 
 # --- メイン画面 ---
@@ -175,12 +208,11 @@ if df is not None:
     raw_event_list = [c for c in df.columns if c != points_col]
     
     # 1. 種目リストの整理と分類
-    # { "日本語名": "英語キー" }
     all_events_map = {}
-    # カテゴリごとにリスト化 { "短距離": ["100m", "200m"...], "跳躍": [...] }
     categorized_events = {cat: [] for cat in CATEGORY_ORDER}
     
     for eng_name in raw_event_list:
+        # 翻訳辞書になければ英語のまま
         jp_name = EVENT_TRANSLATION.get(eng_name, eng_name)
         all_events_map[jp_name] = eng_name
         
@@ -189,29 +221,23 @@ if df is not None:
         if cat in categorized_events:
             categorized_events[cat].append(jp_name)
         else:
-            # 万が一分類漏れがあれば短距離へ
             categorized_events["短距離・ハードル・リレー"].append(jp_name)
 
     # 各カテゴリ内で種目名をソート
     for cat in categorized_events:
-        # 主要種目(100mなど)が上に来るように工夫してもいいが、
-        # ここではシンプルに名前順でソート、ただし主要なものが先頭に来るように文字長などで工夫もできるが
-        # ひとまずリスト順（CSV順）または名前順
         categorized_events[cat].sort()
         
-        # 主要種目を先頭に持ってくるロジック (簡易版)
-        # 例えば "100m" があればリストの先頭へ移動させる
+        # 主要種目を先頭に持ってくるロジック
         top_priority = ["100m", "200m", "400m", "110mハードル", "400mハードル", 
                         "800m", "1500m", "5000m", "10000m",
                         "走高跳", "棒高跳", "走幅跳", "三段跳",
                         "砲丸投", "円盤投", "ハンマー投", "やり投",
-                        "十種競技", "マラソン", "ハーフマラソン"]
+                        "十種競技", "マラソン", "ハーフマラソン",
+                        "5000m競歩", "10000m競歩", "20km競歩", "35km競歩", "50km競歩"]
         
-        # 優先種目を抽出して並べ替え
         priority_items = [e for e in categorized_events[cat] if e in top_priority]
         other_items = [e for e in categorized_events[cat] if e not in top_priority]
         
-        # 優先リストの順序を守りつつ結合
         sorted_priority = sorted(priority_items, key=lambda x: top_priority.index(x) if x in top_priority else 999)
         categorized_events[cat] = sorted_priority + other_items
 
