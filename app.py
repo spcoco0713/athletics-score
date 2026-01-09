@@ -5,7 +5,7 @@ import os
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="IAAFスコア計算ツール",
+    page_title="World Athletics スコア計算ツール",
     page_icon="🏃",
     layout="centered"
 )
@@ -265,8 +265,8 @@ def get_event_type(event_name):
     return "time_s"
 
 # --- メイン画面 ---
-st.title("IAAFスコア計算ツール")
-st.caption("World Athletics Scoring Tables (旧IAAF採点表) に基づくスコア検索")
+st.title("World Athletics スコア計算ツール")
+st.caption("World Athletics Scoring Tables of Athletics (世界陸連採点表) に基づくスコア検索")
 
 if df is not None:
     raw_event_list = [c for c in df.columns if c != points_col]
