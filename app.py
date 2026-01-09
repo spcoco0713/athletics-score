@@ -266,7 +266,7 @@ def get_event_type(event_name):
 
 # --- メイン画面 ---
 st.title("World Athletics スコア計算ツール")
-st.caption("World Athletics Scoring Tables of Athletics (世界陸連採点表) に基づくスコア検索")
+st.caption("World Athletics Scoring Tables of Athletics (世界陸連採点表) に基づくスコア検索　※男子（女子は今後対応予定）")
 
 if df is not None:
     raw_event_list = [c for c in df.columns if c != points_col]
@@ -368,3 +368,4 @@ if df is not None:
 
 else:
     st.error("システムエラー: データファイルが見つかりません。管理者に連絡してください。")
+
