@@ -16,24 +16,21 @@ EVENT_TRANSLATION = {
     "50m": "50m", "55m": "55m", "60m": "60m",
     "100m": "100m", "200m": "200m", "300m": "300m", "400m": "400m",
     "500m": "500m", "600m": "600m",
-    # 室内短距離 (sh = short track/indoor)
-    "50m sh": "50m (室内)", "55m sh": "55m (室内)", "60m sh": "60m (室内)",
-    "200m sh": "200m (室内)", "300m sh": "300m (室内)", "400m sh": "400m (室内)",
+    "50m sh": "50m (ST)", "55m sh": "55m (ST)", "60m sh": "60m (ST)",
+    "200m sh": "200m (ST)", "300m sh": "300m (ST)", "400m sh": "400m (ST)",
     
     # ハードル
     "50mH": "50mハードル", "55mH": "55mハードル", "60mH": "60mハードル",
     "110mH": "110mハードル", "400mH": "400mハードル", "300mH": "300mハードル",
-    # 室内ハードル
-    "50mH sh": "50mハードル (室内)", "55mH sh": "55mハードル (室内)", "60mH sh": "60mハードル (室内)",
+    "50mH sh": "50mハードル (ST)", "55mH sh": "55mハードル (ST)", "60mH sh": "60mハードル (ST)",
 
     # 中長距離
     "800m": "800m", "1000m": "1000m", "1500m": "1500m",
     "Mile": "1マイル", "2000m": "2000m", "3000m": "3000m", 
     "2 Miles": "2マイル", "5000m": "5000m", "10000m": "10000m",
-    # 室内中長距離
-    "800m sh": "800m (室内)", "1000m sh": "1000m (室内)", "1500m sh": "1500m (室内)",
-    "Mile sh": "1マイル (室内)", "3000m sh": "3000m (室内)", "2 Miles sh": "2マイル (室内)",
-    "5000m sh": "5000m (室内)",
+    "800m sh": "800m (ST)", "1000m sh": "1000m (ST)", "1500m sh": "1500m (ST)",
+    "Mile sh": "1マイル (ST)", "3000m sh": "3000m (ST)", "2 Miles sh": "2マイル (ST)",
+    "5000m sh": "5000m (ST)",
 
     # 障害
     "2000m SC": "2000m障害", "3000m SC": "3000m障害",
@@ -45,7 +42,7 @@ EVENT_TRANSLATION = {
     "Marathon": "マラソン", "35 km": "35kmロード", "50 km": "50kmロード", "100 km": "100kmロード",
     "Road Relay": "ロードリレー",
 
-    # 競歩 (トラック/ロード)
+    # 競歩
     "3000mW": "3000m競歩", "5000mW": "5000m競歩", "10,000mW": "10000m競歩",
     "20,000mW": "20000m競歩", "30,000mW": "30000m競歩", "35,000mW": "35000m競歩", "50,000mW": "50000m競歩",
     "10km W": "10km競歩", "15km W": "15km競歩", "20km W": "20km競歩", 
@@ -62,35 +59,53 @@ EVENT_TRANSLATION = {
 
     # 混成
     "Dec.": "十種競技", "Hept.": "七種競技", "Pent.": "五種競技",
-    "Hept. sh": "七種競技 (室内)", "Pent. sh": "五種競技 (室内)",
+    "Hept. sh": "七種競技 (ST)", "Pent. sh": "五種競技 (ST)",
 
     # リレー
     "4x100m": "4x100mリレー", "4x200m": "4x200mリレー", "4x400m": "4x400mリレー",
-    "4x200m sh": "4x200mリレー (室内)", "4x400m sh": "4x400mリレー (室内)",
-    "4x400mix": "男女混合4x400mリレー", "4x400mix sh": "男女混合4x400mリレー (室内)",
+    "4x200m sh": "4x200mリレー (ST)", "4x400m sh": "4x400mリレー (ST)",
+    "4x400mix": "男女混合4x400mリレー", "4x400mix sh": "男女混合4x400mリレー (ST)",
     "Distance Medley Relay": "メドレーリレー"
 }
 
-# --- 主要種目の表示順リスト（これらを優先的に上に表示） ---
-PRIMARY_ORDER = [
-    # --- トラック (短距離) ---
-    "100m", "200m", "400m",
-    # --- トラック (中長距離) ---
-    "800m", "1500m", "3000m", "5000m", "10000m",
-    # --- トラック (障害・ハードル) ---
-    "110mハードル", "400mハードル", "3000m障害",
-    # --- 跳躍 ---
-    "走高跳", "棒高跳", "走幅跳", "三段跳",
-    # --- 投てき ---
-    "砲丸投", "円盤投", "ハンマー投", "やり投",
-    # --- 混成 ---
-    "十種競技", "七種競技 (室内)",
-    # --- リレー ---
-    "4x100mリレー", "4x400mリレー",
-    # --- ロード ---
-    "ハーフマラソン", "マラソン",
-    # --- 競歩 ---
-    "5000m競歩", "10000m競歩", "20km競歩", "35km競歩", "50km競歩"
+# --- カテゴリ定義 ---
+def classify_event(event_name_jp):
+    """日本語の種目名をカテゴリに分類する"""
+    name = event_name_jp
+    
+    # 1. 混成
+    if "種競技" in name:
+        return "混成競技"
+    
+    # 2. 跳躍
+    if "跳" in name:
+        return "跳躍"
+        
+    # 3. 投てき
+    if "投" in name:
+        return "投てき"
+        
+    # 4. ロード・競歩
+    if "競歩" in name or "マラソン" in name or "ロード" in name:
+        return "ロード・競歩"
+        
+    # 5. 中長距離 (800m以上, 障害含む)
+    # ※マイル(約1600m)も含む
+    middle_long_keywords = ["800m", "1000m", "1500m", "2000m", "3000m", "5000m", "10000m", "マイル", "障害"]
+    if any(k in name for k in middle_long_keywords):
+        return "中長距離・障害"
+        
+    # 6. 短距離・ハードル・リレー (それ以外)
+    return "短距離・ハードル・リレー"
+
+# カテゴリの並び順
+CATEGORY_ORDER = [
+    "短距離・ハードル・リレー",
+    "中長距離・障害",
+    "跳躍",
+    "投てき",
+    "ロード・競歩",
+    "混成競技"
 ]
 
 # --- データの読み込みロジック ---
@@ -159,107 +174,136 @@ st.caption("World Athletics Scoring Tables (旧IAAF採点表) に基づくスコ
 if df is not None:
     raw_event_list = [c for c in df.columns if c != points_col]
     
-    # --- 表示用リストの作成と並び替え ---
-    
-    # 1. 全ての種目を {日本語名: 英語キー} の形にする
+    # 1. 種目リストの整理と分類
+    # { "日本語名": "英語キー" }
     all_events_map = {}
+    # カテゴリごとにリスト化 { "短距離": ["100m", "200m"...], "跳躍": [...] }
+    categorized_events = {cat: [] for cat in CATEGORY_ORDER}
+    
     for eng_name in raw_event_list:
-        # 辞書にあれば日本語、なければ英語そのまま
         jp_name = EVENT_TRANSLATION.get(eng_name, eng_name)
         all_events_map[jp_name] = eng_name
-
-    # 2. 並び順を決定する
-    # 主要種目リストにあるものはその順序で、それ以外は名前順で後ろに追加
-    sorted_labels = []
-    
-    # まず主要種目を追加
-    for primary in PRIMARY_ORDER:
-        if primary in all_events_map:
-            sorted_labels.append(primary)
-            
-    # 残りの種目（マイナー、室内など）を追加
-    remaining = [k for k in all_events_map.keys() if k not in sorted_labels]
-    # 残りは読みやすいように五十音/アルファベット順にしておく
-    sorted_labels.extend(sorted(remaining))
-
-    # セレクトボックス作成
-    selected_label = st.selectbox("種目を選択してください", sorted_labels)
-    
-    # 計算には元の英語名を使う
-    selected_event_key = all_events_map[selected_label]
-    
-    # 入力フォームの切り替え
-    mode = get_event_type(selected_event_key)
-    user_val = 0.0
-    input_display_str = ""
-    
-    with st.container():
-        st.subheader("記録の入力")
-        cols = st.columns(4)
         
-        if mode == "field":
-            m = cols[0].number_input("メートル (m)", min_value=0, value=0)
-            cm = cols[1].number_input("センチ (cm)", min_value=0, max_value=99, value=0, step=1)
-            user_val = float(m) + float(cm) / 100.0
-            input_display_str = f"{m}m {cm}cm"
-            
-        elif mode == "time_hms":
-            h = cols[0].number_input("時間", min_value=0, value=0)
-            m = cols[1].number_input("分", min_value=0, max_value=59, value=0)
-            s = cols[2].number_input("秒", min_value=0, max_value=59, value=0)
-            cs = cols[3].number_input("1/100秒", min_value=0, max_value=99, value=0)
-            user_val = h*3600 + m*60 + s + (cs/100.0)
-            input_display_str = f"{h}:{m:02}:{s:02}.{cs:02}"
-            
-        elif mode == "time_ms":
-            m = cols[0].number_input("分", min_value=0, value=0)
-            s = cols[1].number_input("秒", min_value=0, max_value=59, value=0)
-            cs = cols[2].number_input("1/100秒", min_value=0, max_value=99, value=0)
-            user_val = m*60 + s + (cs/100.0)
-            input_display_str = f"{m}:{s:02}.{cs:02}"
-            
-        elif mode == "score":
-            pts_in = cols[0].number_input("得点", min_value=0, value=0)
-            user_val = float(pts_in)
-            input_display_str = f"{pts_in}点"
-            
-        else: # time_s
-            s = cols[0].number_input("秒", min_value=0, value=0)
-            cs = cols[1].number_input("1/100秒", min_value=0, max_value=99, value=0)
-            user_val = float(s) + (cs/100.0)
-            input_display_str = f"{s}.{cs:02}秒"
-
-    if st.button("スコアを計算する", type="primary"):
-        if user_val <= 0:
-            st.warning("0より大きい数値を入力してください。")
+        # カテゴリ分類
+        cat = classify_event(jp_name)
+        if cat in categorized_events:
+            categorized_events[cat].append(jp_name)
         else:
-            temp_df = df[[points_col, selected_event_key]].copy()
-            temp_df = temp_df[temp_df[selected_event_key] != "-"]
-            temp_df = temp_df.dropna(subset=[selected_event_key])
+            # 万が一分類漏れがあれば短距離へ
+            categorized_events["短距離・ハードル・リレー"].append(jp_name)
+
+    # 各カテゴリ内で種目名をソート
+    for cat in categorized_events:
+        # 主要種目(100mなど)が上に来るように工夫してもいいが、
+        # ここではシンプルに名前順でソート、ただし主要なものが先頭に来るように文字長などで工夫もできるが
+        # ひとまずリスト順（CSV順）または名前順
+        categorized_events[cat].sort()
+        
+        # 主要種目を先頭に持ってくるロジック (簡易版)
+        # 例えば "100m" があればリストの先頭へ移動させる
+        top_priority = ["100m", "200m", "400m", "110mハードル", "400mハードル", 
+                        "800m", "1500m", "5000m", "10000m",
+                        "走高跳", "棒高跳", "走幅跳", "三段跳",
+                        "砲丸投", "円盤投", "ハンマー投", "やり投",
+                        "十種競技", "マラソン", "ハーフマラソン"]
+        
+        # 優先種目を抽出して並べ替え
+        priority_items = [e for e in categorized_events[cat] if e in top_priority]
+        other_items = [e for e in categorized_events[cat] if e not in top_priority]
+        
+        # 優先リストの順序を守りつつ結合
+        sorted_priority = sorted(priority_items, key=lambda x: top_priority.index(x) if x in top_priority else 999)
+        categorized_events[cat] = sorted_priority + other_items
+
+    # 2. UI配置
+    
+    # カテゴリ選択 (ラジオボタンで横並び)
+    selected_category = st.radio("カテゴリを選択してください", CATEGORY_ORDER, horizontal=True)
+    
+    # そのカテゴリ内の種目リストを取得
+    events_in_cat = categorized_events[selected_category]
+    
+    if not events_in_cat:
+        st.warning("このカテゴリの種目データがありません。")
+        selected_label = None
+    else:
+        # 種目選択
+        selected_label = st.selectbox("種目を選択", events_in_cat)
+
+    if selected_label:
+        selected_event_key = all_events_map[selected_label]
+        mode = get_event_type(selected_event_key)
+        user_val = 0.0
+        input_display_str = ""
+        
+        with st.container():
+            st.markdown("---")
+            st.subheader(f"{selected_label} の記録入力")
+            cols = st.columns(4)
             
-            temp_df['val'] = temp_df[selected_event_key].apply(parse_record_from_csv)
-            temp_df = temp_df.dropna(subset=['val'])
-            
-            if temp_df.empty:
-                st.error("データが見つかりませんでした。")
+            if mode == "field":
+                m = cols[0].number_input("メートル (m)", min_value=0, value=0)
+                cm = cols[1].number_input("センチ (cm)", min_value=0, max_value=99, value=0, step=1)
+                user_val = float(m) + float(cm) / 100.0
+                input_display_str = f"{m}m {cm}cm"
+                
+            elif mode == "time_hms":
+                h = cols[0].number_input("時間", min_value=0, value=0)
+                m = cols[1].number_input("分", min_value=0, max_value=59, value=0)
+                s = cols[2].number_input("秒", min_value=0, max_value=59, value=0)
+                cs = cols[3].number_input("1/100秒", min_value=0, max_value=99, value=0)
+                user_val = h*3600 + m*60 + s + (cs/100.0)
+                input_display_str = f"{h}:{m:02}:{s:02}.{cs:02}"
+                
+            elif mode == "time_ms":
+                m = cols[0].number_input("分", min_value=0, value=0)
+                s = cols[1].number_input("秒", min_value=0, max_value=59, value=0)
+                cs = cols[2].number_input("1/100秒", min_value=0, max_value=99, value=0)
+                user_val = m*60 + s + (cs/100.0)
+                input_display_str = f"{m}:{s:02}.{cs:02}"
+                
+            elif mode == "score":
+                pts_in = cols[0].number_input("得点", min_value=0, value=0)
+                user_val = float(pts_in)
+                input_display_str = f"{pts_in}点"
+                
+            else: # time_s
+                s = cols[0].number_input("秒", min_value=0, value=0)
+                cs = cols[1].number_input("1/100秒", min_value=0, max_value=99, value=0)
+                user_val = float(s) + (cs/100.0)
+                input_display_str = f"{s}.{cs:02}秒"
+
+        if st.button("スコアを計算する", type="primary"):
+            if user_val <= 0:
+                st.warning("0より大きい数値を入力してください。")
             else:
-                temp_df['diff'] = (temp_df['val'] - user_val).abs()
-                best_match = temp_df.loc[temp_df['diff'].idxmin()]
+                temp_df = df[[points_col, selected_event_key]].copy()
+                temp_df = temp_df[temp_df[selected_event_key] != "-"]
+                temp_df = temp_df.dropna(subset=[selected_event_key])
                 
-                score = int(best_match[points_col])
-                table_record = best_match[selected_event_key]
+                temp_df['val'] = temp_df[selected_event_key].apply(parse_record_from_csv)
+                temp_df = temp_df.dropna(subset=['val'])
                 
-                st.divider()
-                st.subheader(f"推定スコア: :blue[{score} 点]")
-                st.write(f"入力記録: {input_display_str}")
-                st.caption(f"採点表の近似値: {table_record} ({score}点)")
-                
-                st.divider()
-                st.markdown("### 👟 記録向上のためのアイテム")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.info("Amazonリンク (スパイクなど)")
-                with col2:
-                    st.info("Amazonリンク (サプリメントなど)")
+                if temp_df.empty:
+                    st.error("データが見つかりませんでした。")
+                else:
+                    temp_df['diff'] = (temp_df['val'] - user_val).abs()
+                    best_match = temp_df.loc[temp_df['diff'].idxmin()]
+                    
+                    score = int(best_match[points_col])
+                    table_record = best_match[selected_event_key]
+                    
+                    st.divider()
+                    st.subheader(f"推定スコア: :blue[{score} 点]")
+                    st.write(f"入力記録: {input_display_str}")
+                    st.caption(f"採点表の近似値: {table_record} ({score}点)")
+                    
+                    st.divider()
+                    st.markdown("### 👟 記録向上のためのアイテム")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.info("Amazonリンク (スパイクなど)")
+                    with col2:
+                        st.info("Amazonリンク (サプリメントなど)")
 else:
     st.error("システムエラー: データファイルが見つかりません。管理者に連絡してください。")
