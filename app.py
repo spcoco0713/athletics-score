@@ -10,6 +10,80 @@ st.set_page_config(
     layout="centered"
 )
 
+# ==========================================
+# ★ アフィリエイト設定エリア
+# ==========================================
+# あなたのアソシエイトID (トラッキングID)
+AMAZON_TAG = "athleticsscor-22" 
+
+def get_amazon_link(keyword):
+    """キーワード検索結果へのアフィリエイトリンクを生成する"""
+    base_url = "https://www.amazon.co.jp/s"
+    return f"{base_url}?k={keyword}&tag={AMAZON_TAG}"
+
+def show_affiliate_links(category_name):
+    """カテゴリに応じたおすすめ商品を表示する"""
+    st.divider()
+    st.markdown("### 🛒 競技力向上のための厳選アイテム")
+    st.caption(f"※{category_name}選手におすすめのギアをAmazonで探せます")
+
+    col1, col2 = st.columns(2)
+
+    # --- カテゴリ別のおすすめ商品定義 ---
+    if category_name == "短距離・ハードル・リレー":
+        with col1:
+            st.info("👟 **短距離スパイク**")
+            st.markdown(f"100m〜400m向けの最新モデル。\n\n[Amazonで探す ➤]({get_amazon_link('陸上スパイク 短距離')})")
+        with col2:
+            st.info("⏱ **ストップウォッチ**")
+            st.markdown(f"指導者・マネージャーの必需品。\n\n[Amazonで探す ➤]({get_amazon_link('セイコー ストップウォッチ 陸上')})")
+
+    elif category_name in ["中長距離・障害", "ロード・競歩", "競歩（トラック）"]:
+        with col1:
+            st.info("👟 **ランニングシューズ**")
+            st.markdown(f"厚底から薄底まで。\n\n[Amazonで探す ➤]({get_amazon_link('ランニングシューズ 厚底')})")
+        with col2:
+            st.info("⌚ **GPSウォッチ**")
+            st.markdown(f"Garminなどペース管理に。\n\n[Amazonで探す ➤]({get_amazon_link('ガーミン ランニングウォッチ')})")
+            
+    elif category_name == "跳躍":
+        with col1:
+            st.info("👟 **跳躍用スパイク**")
+            st.markdown(f"走幅跳・高跳・三段跳・棒高跳。\n\n[Amazonで探す ➤]({get_amazon_link('陸上スパイク 跳躍')})")
+        with col2:
+            st.info("🩹 **テーピング・サポーター**")
+            st.markdown(f"足首や膝の保護に。\n\n[Amazonで探す ➤]({get_amazon_link('キネシオロジーテープ 50mm')})")
+
+    elif category_name == "投てき":
+        with col1:
+            st.info("👟 **投てきシューズ**")
+            st.markdown(f"回転用・グライド用。\n\n[Amazonで探す ➤]({get_amazon_link('陸上 投てきシューズ')})")
+        with col2:
+            st.info("💪 **ウエイトトレーニング**")
+            st.markdown(f"ベルトやリストラップなど。\n\n[Amazonで探す ➤]({get_amazon_link('トレーニングベルト')})")
+
+    else: # 混成などその他
+        with col1:
+            st.info("👟 **陸上スパイク**")
+            st.markdown(f"全種目対応モデルなど。\n\n[Amazonで探す ➤]({get_amazon_link('陸上スパイク')})")
+        with col2:
+            st.info("🥤 **プロテイン・サプリ**")
+            st.markdown(f"リカバリーと体づくりに。\n\n[Amazonで探す ➤]({get_amazon_link('ホエイプロテイン')})")
+
+    # --- 全員におすすめ (下段) ---
+    st.markdown("") # 余白
+    with st.expander("🥤 全アスリートにおすすめ (プロテイン・ケア用品)"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"**プロテイン**\n\n[Amazonを見る]({get_amazon_link('ザバス プロテイン')})")
+        with c2:
+            st.markdown(f"**フォームローラー**\n\n[Amazonを見る]({get_amazon_link('フォームローラー 筋膜リリース')})")
+        with c3:
+            st.markdown(f"**アミノ酸 (BCAA)**\n\n[Amazonを見る]({get_amazon_link('アミノバイタル')})")
+
+
+# --- 以下、既存のロジック ---
+
 # --- 種目名の日英翻訳辞書 (完全版: Wとshの徹底排除) ---
 EVENT_TRANSLATION = {
     # --- 短距離 ---
@@ -86,40 +160,16 @@ EVENT_TRANSLATION = {
 
 # --- カテゴリ定義 ---
 def classify_event(event_name_jp):
-    """日本語の種目名をカテゴリに分類する"""
     name = event_name_jp
-    
-    # 1. 混成
-    if "種競技" in name:
-        return "混成競技"
-    
-    # 2. 跳躍
-    if "跳" in name and "競歩" not in name:
-        return "跳躍"
-        
-    # 3. 投てき
-    if "投" in name:
-        return "投てき"
-        
-    # 4. 競歩（トラック）
-    # "m競歩" で終わるもの (例: 10000m競歩) はトラック。
-    if "m競歩" in name and "km" not in name and "マラソン" not in name and "ハーフ" not in name:
-        return "競歩（トラック）"
-        
-    # 5. ロード（長距離・競歩）
-    # ロード走、マラソン、およびロード競歩 (km競歩, マラソン競歩)
-    if "ロード" in name or "マラソン" in name or "km競歩" in name:
-        return "ロード（長距離・競歩）"
-        
-    # 6. 中長距離 (800m以上, 障害含む)
+    if "種競技" in name: return "混成競技"
+    if "跳" in name and "競歩" not in name: return "跳躍"
+    if "投" in name: return "投てき"
+    if "m競歩" in name and "km" not in name and "マラソン" not in name and "ハーフ" not in name: return "競歩（トラック）"
+    if "ロード" in name or "マラソン" in name or "km競歩" in name: return "ロード（長距離・競歩）"
     middle_long_keywords = ["800m", "1000m", "1500m", "2000m", "3000m", "5000m", "10000m", "マイル", "障害"]
-    if any(k in name for k in middle_long_keywords):
-        return "中長距離・障害"
-        
-    # 7. 短距離・ハードル・リレー (それ以外)
+    if any(k in name for k in middle_long_keywords): return "中長距離・障害"
     return "短距離・ハードル・リレー"
 
-# カテゴリの並び順
 CATEGORY_ORDER = [
     "短距離・ハードル・リレー",
     "中長距離・障害",
@@ -130,26 +180,21 @@ CATEGORY_ORDER = [
     "混成競技"
 ]
 
-# --- データの読み込みロジック ---
 @st.cache_data
 def load_data():
     csv_files = glob.glob("M_ALL_*.csv")
-    if not csv_files:
-        return None, None
+    if not csv_files: return None, None
     latest_file = sorted(csv_files)[-1]
     try:
         df = pd.read_csv(latest_file)
         points_col = [c for c in df.columns if c.lower() in ["points", "pts", "score"]][0]
         return df, points_col
-    except Exception:
-        return None, None
+    except Exception: return None, None
 
 df, points_col = load_data()
 
-# --- ユーティリティ関数 ---
 def parse_record_from_csv(record_str):
-    if pd.isna(record_str) or str(record_str).strip() in ["-", ""]:
-        return None
+    if pd.isna(record_str) or str(record_str).strip() in ["-", ""]: return None
     s = str(record_str).strip()
     try:
         if ":" in s:
@@ -157,47 +202,23 @@ def parse_record_from_csv(record_str):
             if len(parts) == 3: return float(parts[0])*3600 + float(parts[1])*60 + float(parts[2])
             elif len(parts) == 2: return float(parts[0])*60 + float(parts[1])
         return float(s)
-    except:
-        return None
+    except: return None
 
 def get_event_type(event_name):
     name = event_name.lower().strip()
-    
-    # A. フィールド
     field_keywords = ['hj', 'pv', 'lj', 'tj', 'sp', 'dt', 'ht', 'jt', 'shot', 'disc', 'jave', 'hamm', 'pole', 'jump', 'throw', 'standing', 'wt']
-    if any(k in name for k in field_keywords) and not "dec" in name and not "hept" in name and not "pent" in name:
-        return "field"
-    
-    # B. 混成
-    if "dec" in name or "hept" in name or "pent" in name:
-        return "score"
-    
-    # C. 長時間 (時:分:秒)
-    # 競歩関連の判定
+    if any(k in name for k in field_keywords) and not "dec" in name and not "hept" in name and not "pent" in name: return "field"
+    if "dec" in name or "hept" in name or "pent" in name: return "score"
     is_walk = 'walk' in name or 'km w' in name or 'marw' in name or 'hmw' in name or name.endswith('w') or '000mw' in name
     if is_walk:
-        # 短い競歩は分:秒 (3000m, 5000m, 10000m, 3km, 5km, 10km)
-        # 10,000mW (トラック) もトップ選手は38分とかなので分:秒でOKだが、市民ランナーレベルだと1時間超えるかも？
-        # ここではWA採点表のレンジに合わせて、10000m/10kmまでは分:秒、それ以上(15km~, 20000m~)は時:分:秒にする
-        if any(k in name for k in ['3000', '5000', '10000', '10,000', '3km', '5km', '10km']):
-             return "time_ms"
-        else:
-             return "time_hms"
-
-    # ロード・長時間走
+        if any(k in name for k in ['3000', '5000', '10000', '10,000', '3km', '5km', '10km']): return "time_ms"
+        else: return "time_hms"
     long_dist_keywords = ['marathon', 'hm', 'hour', '15 km', '20 km', '25 km', '30 km', '35 km', '50 km', '100 km', 'miles']
     if name == 'hm': return "time_hms"
-    if any(k in name for k in long_dist_keywords):
-        return "time_hms"
-        
-    # D. 中長距離 (分:秒)
+    if any(k in name for k in long_dist_keywords): return "time_hms"
     middle_keywords = ['800m', '1000m', '1500m', '2000m', '3000m', '5000m', '10000m', 'mile', 'sc', 'steeple', '4x', 'relay']
-    if any(k in name for k in middle_keywords):
-        return "time_ms"
-    if '5 km' in name or '10 km' in name:
-        return "time_ms"
-        
-    # E. 短距離 (秒)
+    if any(k in name for k in middle_keywords): return "time_ms"
+    if '5 km' in name or '10 km' in name: return "time_ms"
     return "time_s"
 
 # --- メイン画面 ---
@@ -206,54 +227,35 @@ st.caption("World Athletics Scoring Tables (旧IAAF採点表) に基づくスコ
 
 if df is not None:
     raw_event_list = [c for c in df.columns if c != points_col]
-    
-    # 1. 種目リストの整理と分類
     all_events_map = {}
     categorized_events = {cat: [] for cat in CATEGORY_ORDER}
-    
     for eng_name in raw_event_list:
-        # 翻訳辞書になければ英語のまま
         jp_name = EVENT_TRANSLATION.get(eng_name, eng_name)
         all_events_map[jp_name] = eng_name
-        
-        # カテゴリ分類
         cat = classify_event(jp_name)
-        if cat in categorized_events:
-            categorized_events[cat].append(jp_name)
-        else:
-            categorized_events["短距離・ハードル・リレー"].append(jp_name)
+        if cat in categorized_events: categorized_events[cat].append(jp_name)
+        else: categorized_events["短距離・ハードル・リレー"].append(jp_name)
 
-    # 各カテゴリ内で種目名をソート
     for cat in categorized_events:
         categorized_events[cat].sort()
-        
-        # 主要種目を先頭に持ってくるロジック
         top_priority = ["100m", "200m", "400m", "110mハードル", "400mハードル", 
                         "800m", "1500m", "5000m", "10000m",
                         "走高跳", "棒高跳", "走幅跳", "三段跳",
                         "砲丸投", "円盤投", "ハンマー投", "やり投",
                         "十種競技", "マラソン", "ハーフマラソン",
                         "5000m競歩", "10000m競歩", "20km競歩", "35km競歩", "50km競歩"]
-        
         priority_items = [e for e in categorized_events[cat] if e in top_priority]
         other_items = [e for e in categorized_events[cat] if e not in top_priority]
-        
         sorted_priority = sorted(priority_items, key=lambda x: top_priority.index(x) if x in top_priority else 999)
         categorized_events[cat] = sorted_priority + other_items
 
-    # 2. UI配置
-    
-    # カテゴリ選択 (ラジオボタンで横並び)
     selected_category = st.radio("カテゴリを選択してください", CATEGORY_ORDER, horizontal=True)
-    
-    # そのカテゴリ内の種目リストを取得
     events_in_cat = categorized_events[selected_category]
     
     if not events_in_cat:
         st.warning("このカテゴリの種目データがありません。")
         selected_label = None
     else:
-        # 種目選択
         selected_label = st.selectbox("種目を選択", events_in_cat)
 
     if selected_label:
@@ -272,7 +274,6 @@ if df is not None:
                 cm = cols[1].number_input("センチ (cm)", min_value=0, max_value=99, value=0, step=1)
                 user_val = float(m) + float(cm) / 100.0
                 input_display_str = f"{m}m {cm}cm"
-                
             elif mode == "time_hms":
                 h = cols[0].number_input("時間", min_value=0, value=0)
                 m = cols[1].number_input("分", min_value=0, max_value=59, value=0)
@@ -280,20 +281,17 @@ if df is not None:
                 cs = cols[3].number_input("1/100秒", min_value=0, max_value=99, value=0)
                 user_val = h*3600 + m*60 + s + (cs/100.0)
                 input_display_str = f"{h}:{m:02}:{s:02}.{cs:02}"
-                
             elif mode == "time_ms":
                 m = cols[0].number_input("分", min_value=0, value=0)
                 s = cols[1].number_input("秒", min_value=0, max_value=59, value=0)
                 cs = cols[2].number_input("1/100秒", min_value=0, max_value=99, value=0)
                 user_val = m*60 + s + (cs/100.0)
                 input_display_str = f"{m}:{s:02}.{cs:02}"
-                
             elif mode == "score":
                 pts_in = cols[0].number_input("得点", min_value=0, value=0)
                 user_val = float(pts_in)
                 input_display_str = f"{pts_in}点"
-                
-            else: # time_s
+            else:
                 s = cols[0].number_input("秒", min_value=0, value=0)
                 cs = cols[1].number_input("1/100秒", min_value=0, max_value=99, value=0)
                 user_val = float(s) + (cs/100.0)
@@ -306,7 +304,6 @@ if df is not None:
                 temp_df = df[[points_col, selected_event_key]].copy()
                 temp_df = temp_df[temp_df[selected_event_key] != "-"]
                 temp_df = temp_df.dropna(subset=[selected_event_key])
-                
                 temp_df['val'] = temp_df[selected_event_key].apply(parse_record_from_csv)
                 temp_df = temp_df.dropna(subset=['val'])
                 
@@ -315,7 +312,6 @@ if df is not None:
                 else:
                     temp_df['diff'] = (temp_df['val'] - user_val).abs()
                     best_match = temp_df.loc[temp_df['diff'].idxmin()]
-                    
                     score = int(best_match[points_col])
                     table_record = best_match[selected_event_key]
                     
@@ -324,12 +320,8 @@ if df is not None:
                     st.write(f"入力記録: {input_display_str}")
                     st.caption(f"採点表の近似値: {table_record} ({score}点)")
                     
-                    st.divider()
-                    st.markdown("### 👟 記録向上のためのアイテム")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.info("Amazonリンク (スパイクなど)")
-                    with col2:
-                        st.info("Amazonリンク (サプリメントなど)")
+                    # ★ 収益化エリア（カテゴリごとに変化）
+                    show_affiliate_links(selected_category)
+
 else:
     st.error("システムエラー: データファイルが見つかりません。管理者に連絡してください。")
