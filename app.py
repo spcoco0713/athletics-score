@@ -5,35 +5,64 @@ import os
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="陸上競技スコア計算ツール",
+    page_title="IAAFスコア計算ツール",
     page_icon="🏃",
     layout="centered"
 )
 
-# --- データの読み込みロジック (自動検出版) ---
+# --- 種目名の日英翻訳辞書 ---
+# CSVのヘッダー(英語)を日本語表記に変換するためのマッピング
+EVENT_TRANSLATION = {
+    # 短距離
+    "100m": "100m", "200m": "200m", "300m": "300m", "400m": "400m",
+    "50m": "50m", "55m": "55m", "60m": "60m",
+    # ハードル
+    "110mH": "110mハードル", "400mH": "400mハードル", 
+    "50mH": "50mハードル", "55mH": "55mハードル", "60mH": "60mハードル",
+    # 中長距離
+    "600m": "600m", "800m": "800m", "1000m": "1000m",
+    "1500m": "1500m", "Mile": "マイル", "2000m": "2000m",
+    "3000m": "3000m", "5000m": "5000m", "10000m": "10000m",
+    "2000m SC": "2000m障害", "3000m SC": "3000m障害",
+    # ロード
+    "5 km": "5kmロード", "10 km": "10kmロード", "15 km": "15kmロード",
+    "20 km": "20kmロード", "25 km": "25kmロード", "30 km": "30kmロード",
+    "35 km": "35kmロード", "50 km": "50kmロード", "100 km": "100kmロード",
+    "HM": "ハーフマラソン", "Marathon": "マラソン",
+    # 競歩
+    "3000mW": "3000m競歩", "5000mW": "5000m競歩", "10,000mW": "10000m競歩",
+    "20,000mW": "20000m競歩", "30,000mW": "30000m競歩", "35,000mW": "35000m競歩", "50,000mW": "50000m競歩",
+    "10km W": "10km競歩", "15km W": "15km競歩", "20km W": "20km競歩", 
+    "30km W": "30km競歩", "35km W": "35km競歩", "50km W": "50km競歩",
+    "MarW": "マラソン競歩",
+    # フィールド
+    "HJ": "走高跳", "PV": "棒高跳", "LJ": "走幅跳", "TJ": "三段跳",
+    "SP": "砲丸投", "DT": "円盤投", "HT": "ハンマー投", "JT": "やり投",
+    # 混成
+    "Dec.": "十種競技", "Hept.": "七種競技", "Pent.": "五種競技",
+    # リレー
+    "4x100m": "4x100mリレー", "4x200m": "4x200mリレー", "4x400m": "4x400mリレー"
+}
+
+# --- データの読み込みロジック ---
 @st.cache_data
 def load_data():
-    # 1. "M_ALL_" で始まるCSVファイルをすべて探す
     csv_files = glob.glob("M_ALL_*.csv")
     
     if not csv_files:
-        return None, None, "ファイルが見つかりません"
+        return None, None
     
-    # 2. ファイル名でソートして、一番新しい(最後尾の)ファイルを選ぶ
-    # (日付がファイル名に入っていれば、名前順=日付順になります)
+    # 一番新しい日付のファイルを自動選択
     latest_file = sorted(csv_files)[-1]
     
     try:
         df = pd.read_csv(latest_file)
-        
-        # Points列の特定 (大文字小文字のゆらぎ吸収)
         points_col = [c for c in df.columns if c.lower() in ["points", "pts", "score"]][0]
-        
-        return df, points_col, latest_file
-    except Exception as e:
-        return None, None, f"読み込みエラー: {e}"
+        return df, points_col
+    except Exception:
+        return None, None
 
-df, points_col, current_filename = load_data()
+df, points_col = load_data()
 
 # --- ユーティリティ関数 ---
 def parse_record_from_csv(record_str):
@@ -50,6 +79,7 @@ def parse_record_from_csv(record_str):
         return None
 
 def get_event_type(event_name):
+    # 判定には元の英語名を使う
     name = event_name.lower().strip()
     
     # A. フィールド
@@ -84,28 +114,35 @@ def get_event_type(event_name):
     # E. 短距離 (秒)
     return "time_s"
 
-# --- サイドバー (管理者用情報) ---
-with st.sidebar:
-    st.header("About")
-    if current_filename:
-        st.success(f"データ読込完了\n\n📄 {current_filename}")
-    else:
-        st.error("データなし")
-    st.markdown("---")
-    st.caption("© Athletics Score Lab.")
-
 # --- メイン画面 ---
-st.title("🏃‍♂️ 陸上競技スコア計算ツール")
-st.caption("世界陸連採点表 (World Athletics Scoring Tables) に基づくスコア検索")
+st.title("IAAFスコア計算ツール")
+st.caption("World Athletics Scoring Tables (旧IAAF採点表) に基づくスコア検索")
 
 if df is not None:
-    event_list = [c for c in df.columns if c != points_col]
+    # 列名(英語)を取得
+    raw_event_list = [c for c in df.columns if c != points_col]
     
-    # 1. 種目選択
-    selected_event = st.selectbox("種目を選択してください", event_list)
+    # 表示用リストを作成（日本語があるものは日本語に、なければ英語のまま）
+    # { "日本語名": "元の英語名", ... } という辞書を作る
+    display_map = {}
+    for eng_name in raw_event_list:
+        # 辞書にあれば日本語、なければ英語そのまま
+        jp_name = EVENT_TRANSLATION.get(eng_name, eng_name)
+        
+        # 室内(sh)などは補足をつける
+        if " sh" in eng_name:
+            jp_name += " (室内)"
+        
+        display_map[jp_name] = eng_name
+
+    # セレクトボックスには日本語リストを表示
+    selected_label = st.selectbox("種目を選択してください", list(display_map.keys()))
     
-    # 2. 入力フォームの切り替え
-    mode = get_event_type(selected_event)
+    # 計算には元の英語名を使う
+    selected_event_key = display_map[selected_label]
+    
+    # 入力フォームの切り替え
+    mode = get_event_type(selected_event_key)
     user_val = 0.0
     input_display_str = ""
     
@@ -114,9 +151,9 @@ if df is not None:
         cols = st.columns(4)
         
         if mode == "field":
-            # フィールド (m, cm)
+            # フィールド (m, cm) - cmは整数入力
             m = cols[0].number_input("メートル (m)", min_value=0, value=0)
-            cm = cols[1].number_input("センチ (cm)", min_value=0.0, value=0.0, step=1.0)
+            cm = cols[1].number_input("センチ (cm)", min_value=0, max_value=99, value=0, step=1)
             user_val = float(m) + float(cm) / 100.0
             input_display_str = f"{m}m {cm}cm"
             
@@ -150,19 +187,18 @@ if df is not None:
             user_val = float(s) + (cs/100.0)
             input_display_str = f"{s}.{cs:02}秒"
 
-    # 3. 計算ボタン
+    # 計算ボタン
     if st.button("スコアを計算する", type="primary"):
         if user_val <= 0:
             st.warning("0より大きい数値を入力してください。")
         else:
             # --- 計算ロジック ---
-            temp_df = df[[points_col, selected_event]].copy()
-            # 欠損値処理
-            temp_df = temp_df[temp_df[selected_event] != "-"]
-            temp_df = temp_df.dropna(subset=[selected_event])
+            temp_df = df[[points_col, selected_event_key]].copy()
+            temp_df = temp_df[temp_df[selected_event_key] != "-"]
+            temp_df = temp_df.dropna(subset=[selected_event_key])
             
             # 数値化
-            temp_df['val'] = temp_df[selected_event].apply(parse_record_from_csv)
+            temp_df['val'] = temp_df[selected_event_key].apply(parse_record_from_csv)
             temp_df = temp_df.dropna(subset=['val'])
             
             if temp_df.empty:
@@ -173,7 +209,7 @@ if df is not None:
                 best_match = temp_df.loc[temp_df['diff'].idxmin()]
                 
                 score = int(best_match[points_col])
-                table_record = best_match[selected_event]
+                table_record = best_match[selected_event_key]
                 
                 # --- 結果表示 ---
                 st.divider()
@@ -191,4 +227,4 @@ if df is not None:
                     st.info("Amazonリンク (サプリメントなど)")
 
 else:
-    st.error("CSVファイル (M_ALL_*.csv) が見つかりません。")
+    st.error("システムエラー: データファイルが見つかりません。管理者に連絡してください。")
