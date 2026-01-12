@@ -10,22 +10,23 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CSSで余白を調整 (コンパクト化) ---
+# --- CSSで余白を調整 (コンパクト化 & ラジオボタン調整) ---
 st.markdown("""
     <style>
-        /* アプリ全体の余白調整 */
         .block-container {
-            padding-top: 3rem;
+            padding-top: 2rem;
             padding-bottom: 1rem;
             padding-left: 1rem;
             padding-right: 1rem;
         }
-        /* ヘッダーの余白調整 */
         h1 {
-            font-size: 1.8rem !important;
+            font-size: 1.6rem !important;
             margin-bottom: 0.5rem !important;
         }
-        /* コンテナの余白調整 */
+        /* ラジオボタンの余白を詰める */
+        .stRadio {
+            margin-top: -10px;
+        }
         .st-emotion-cache-1y4p8pa {
             padding: 1rem 0.5rem;
         }
@@ -37,8 +38,7 @@ st.markdown("""
 # ==========================================
 TEXT_RES = {
     "日本語": {
-        # 日本語モードのキャプション：英語で「切り替え可能」なことを目立たせる
-        "caption": "世界陸連採点表 (Scoring Tables) に基づくスコア検索<br><span style='font-size:0.85em; color:#444;'>⚠️ <b>English is available</b> in the sidebar (Settings) ↖</span>",
+        "caption": "世界陸連採点表 (Scoring Tables) に基づくスコア検索",
         "select_gender": "性別 (Gender)",
         "men": "男子 (Men)",
         "women": "女子 (Women)",
@@ -64,8 +64,7 @@ TEXT_RES = {
         "label_pts": "得点"
     },
     "English": {
-        # 英語モードのキャプション：シンプルに
-        "caption": "Calculate points based on World Athletics Scoring Tables.<br><span style='font-size:0.8em; color:#888;'>※日本語はサイドバーで切り替えられます。</span>",
+        "caption": "Calculate points based on World Athletics Scoring Tables.",
         "select_gender": "Gender",
         "men": "Men",
         "women": "Women",
@@ -368,21 +367,32 @@ def get_event_type(event_name):
 # --- サイドバー設定 ---
 with st.sidebar:
     st.header("Settings")
-    lang_choice = st.radio("Language", ["日本語", "English"])
-    st.markdown("---")
+    # 初期選択を「English」に変更
+    lang_choice = st.radio("Language", ["English", "日本語"])
+
+# --- メイン画面 ---
+st.title(get_text("title", lang_choice))
+st.caption(get_text("caption", lang_choice), unsafe_allow_html=True)
+
+# --- 設定エリア (メイン画面上部へ移動) ---
+setting_cols = st.columns(2)
+
+with setting_cols[0]:
+    # 言語選択
+    # 初期値を「English」に合わせるため、ラジオボタンの順序を ["English", "日本語"] に変更
+    lang_choice = st.radio("Language / 言語", ["English", "日本語"], horizontal=True)
+
+with setting_cols[1]:
+    # 性別選択
     gender_label = get_text("select_gender", lang_choice)
+    # 選択肢の順序も言語に合わせて生成されるが、Englishなら "Men" が先頭に来る
     gender_opts = [get_text("men", lang_choice), get_text("women", lang_choice)]
-    gender_choice = st.radio(gender_label, gender_opts)
+    gender_choice = st.radio(gender_label, gender_opts, horizontal=True)
     
     if "Men" in gender_choice or "男子" in gender_choice:
         gender_prefix = "M"
     else:
         gender_prefix = "W"
-
-# --- メイン画面 (タイトルは固定・日英併記) ---
-st.title("World Athletics スコア計算ツール / Scoring Calculator")
-# 説明文のみ言語によって切り替える
-st.caption(get_text("caption", lang_choice), unsafe_allow_html=True)
 
 df, points_col = load_data(gender_prefix)
 
