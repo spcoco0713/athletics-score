@@ -15,7 +15,7 @@ st.markdown("""
     <style>
         /* アプリ全体の余白調整 */
         .block-container {
-            padding-top: 3rem; /* 文字切れを防ぐため少し広げました */
+            padding-top: 3rem;
             padding-bottom: 1rem;
             padding-left: 1rem;
             padding-right: 1rem;
@@ -38,7 +38,8 @@ st.markdown("""
 TEXT_RES = {
     "日本語": {
         "title": "World Athletics スコア計算ツール",
-        "caption": "男子公式採点表 (Men's Scoring Tables) に基づくスコア検索<br>※サイドバー(左上)で言語(English)を切り替えられます。",
+        # 日本語モードでも、英語での案内を併記する (重要！)
+        "caption": "男子公式採点表 (Men's Scoring Tables) に基づくスコア検索<br>※サイドバー(左上)で言語(English)を切り替えられます。<br><span style='font-size:0.9em; color:#555;'>You can switch to English in the sidebar (top left).</span>",
         "select_category": "カテゴリを選択",
         "no_category_data": "このカテゴリの種目データがありません。",
         "select_event": "種目を選択",
@@ -61,7 +62,7 @@ TEXT_RES = {
     },
     "English": {
         "title": "World Athletics Scoring Calculator",
-        "caption": "Calculate points based on World Athletics Scoring Tables (Men's).<br>※You can change the language to Japanese in the sidebar.",
+        "caption": "Calculate points based on World Athletics Scoring Tables (Men's).<br><span style='font-size:0.9em; color:#555;'>※サイドバーで日本語に切り替えられます (You can switch to Japanese in the sidebar).</span>",
         "select_category": "Select Category",
         "no_category_data": "No data available for this category.",
         "select_event": "Select Event",
