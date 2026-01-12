@@ -31,7 +31,7 @@ st.markdown("""
         }
         /* テーブルのフォントサイズ調整 */
         .stTable {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -71,7 +71,7 @@ TEXT_RES = {
         "comp_middle": "中長距離",
         "comp_jumps": "跳躍",
         "comp_throws": "投てき",
-        "comp_road": "ロード・競歩", # カテゴリ追加
+        "comp_road": "ロード・競歩",
         "unit_s": "秒", "unit_m": "m", "unit_pts": "点"
     },
     "English": {
@@ -304,7 +304,6 @@ CUSTOM_SORT_ORDER = [
 # ==========================================
 # ★ 比較用 主要種目リスト (Olympic Events)
 # ==========================================
-# 同スコアのときに表示する種目のリスト (マラソン, 競歩追加)
 OLYMPIC_EVENTS_FOR_COMPARE = [
     "100m", "200m", "400m", 
     "800m", "1500m", "5000m", "10000m",
@@ -353,8 +352,15 @@ def load_data(gender_prefix):
     if not csv_files: return None, None
     latest_file = sorted(csv_files)[-1]
     try:
-        df = pd.read_csv(latest_file)
+        # ★重要: 全て文字列として読み込む (10.00 -> 10 への勝手な変換を防ぐ)
+        df = pd.read_csv(latest_file, dtype=str)
+        # ポイント列を探す
         points_col = [c for c in df.columns if c.lower() in ["points", "pts", "score"]][0]
+        # 計算用の数値列を追加 (Points_Num)
+        df["Points_Num"] = pd.to_numeric(df[points_col].str.replace(',', ''), errors='coerce')
+        df = df.dropna(subset=["Points_Num"])
+        df["Points_Num"] = df["Points_Num"].astype(int)
+        
         return df, points_col
     except Exception:
         return None, None
@@ -377,7 +383,6 @@ def get_event_type(event_name):
     if "dec" in name or "hept" in name or "pent" in name: return "score"
     is_walk = 'walk' in name or 'km w' in name or 'marw' in name or 'hmw' in name or name.endswith('w') or '000mw' in name
     if is_walk:
-        # 長時間扱いにする種目
         if any(k in name for k in ['3000', '5000', '10000', '10,000', '3km', '5km', '10km']): return "time_ms"
         else: return "time_hms"
     long_dist_keywords = ['marathon', 'hm', 'hour', '15 km', '20 km', '25 km', '30 km', '35 km', '50 km', '100 km', 'miles']
@@ -387,6 +392,34 @@ def get_event_type(event_name):
     if any(k in name for k in middle_keywords): return "time_ms"
     if '5 km' in name or '10 km' in name: return "time_ms"
     return "time_s"
+
+# --- 記録の表示整形関数 ---
+def format_display_record(val, mode, lang_code):
+    if pd.isna(val) or val == "-": return "-"
+    
+    # 単位取得
+    unit_s = get_text("unit_s", lang_code)
+    unit_m = get_text("unit_m", lang_code)
+    unit_pts = get_text("unit_pts", lang_code)
+
+    # 秒種目 (10.00)
+    if mode == "time_s":
+        try:
+            f_val = float(val)
+            return f"{f_val:.2f}{unit_s}"
+        except: return str(val) + unit_s
+        
+    # フィールド (7.75)
+    elif mode == "field":
+        return str(val) + unit_m
+        
+    # スコア (8000)
+    elif mode == "score":
+        return str(val) + unit_pts
+        
+    # その他 (分:秒など)
+    return str(val)
+
 
 # --- メイン画面 ---
 st.title("World Athletics Scoring Calculator / スコア検索ツール")
@@ -408,10 +441,9 @@ with setting_cols[1]:
 df, points_col = load_data(gender_prefix)
 
 if df is not None:
-    raw_event_list = [c for c in df.columns if c != points_col]
+    raw_event_list = [c for c in df.columns if c != points_col and c != "Points_Num"]
     all_events_map = {}
     
-    # 翻訳と分類
     if lang_choice == "日本語":
         categorized_events = {cat: [] for cat in CATEGORIES_JP}
         for eng_name in raw_event_list:
@@ -499,7 +531,7 @@ if df is not None:
             if user_val <= 0:
                 st.warning(get_text("warning_input", lang_choice))
             else:
-                temp_df = df[[points_col, selected_event_key]].copy()
+                temp_df = df[[points_col, "Points_Num", selected_event_key]].copy()
                 temp_df = temp_df[temp_df[selected_event_key] != "-"]
                 temp_df = temp_df.dropna(subset=[selected_event_key])
                 temp_df['val'] = temp_df[selected_event_key].apply(parse_record_from_csv)
@@ -523,35 +555,21 @@ if df is not None:
                         else:
                             best_match = candidates.loc[candidates['val'].idxmax()]
 
-                    score = int(best_match[points_col])
+                    score = int(best_match["Points_Num"])
                     table_record = best_match[selected_event_key]
                     
                     st.divider()
                     st.subheader(get_text("result_header", lang_choice).format(score))
                     
-                    # 記録のフォーマット整形 (単位付与 & .00表示)
+                    # 記録のフォーマット整形
                     formatted_input = input_display_str
-                    unit_s = get_text("unit_s", lang_choice)
-                    unit_m = get_text("unit_m", lang_choice)
+                    if mode == "time_s": formatted_input += get_text("unit_s", lang_choice)
                     
-                    if mode == "time_s": # 秒種目
-                        # 10.0 -> 10.00s
-                        formatted_input += unit_s
-                        # table_recordも整形 (10 -> 10.00)
-                        try:
-                            f_rec = float(table_record)
-                            table_record = f"{f_rec:.2f}"
-                        except: pass
-                    elif mode == "time_ms":
-                         # 1:44.0 -> 1:44.00 (もしあれば)
-                         pass # 基本そのまま
-                    elif mode == "field":
-                         # m cm は既に整形済みだが単位をつける
-                         # table_record (例: 7.75) -> 7.75m
-                         table_record = f"{table_record}m"
-
+                    # 近似値レコードも整形して表示
+                    formatted_table_rec = format_display_record(table_record, mode, lang_choice)
+                    
                     st.write(get_text("input_label", lang_choice).format(formatted_input))
-                    st.caption(get_text("approx_label", lang_choice).format(score, table_record))
+                    st.caption(get_text("approx_label", lang_choice).format(score, formatted_table_rec))
                     
                     # === 1. 上下3つのスコア表示 (前後3点ずつ) ===
                     st.markdown(f"**{get_text('nearby_scores', lang_choice)}**")
@@ -559,32 +577,23 @@ if df is not None:
                     
                     nearby_data = []
                     for p in sorted(target_points, reverse=True):
-                        # その点数の行を探す
-                        # df[points_col]は数値型である必要がある
-                        # ポイント列が文字列の場合を考慮してキャスト
-                        # 行の検索
-                        row = df[df[points_col] == p]
+                        # 数値化した Points_Num 列で検索
+                        row = df[df["Points_Num"] == p]
                         
                         if not row.empty:
                             rec = row.iloc[0][selected_event_key]
                             if pd.notna(rec) and rec != "-":
-                                # 整形: 秒種目の場合 .00 をつける
-                                if mode == "time_s":
-                                    try:
-                                        f_rec = float(rec)
-                                        rec = f"{f_rec:.2f}"
-                                    except: pass
-                                
+                                # 整形
+                                rec_disp = format_display_record(rec, mode, lang_choice)
                                 prefix = "👉 " if p == score else ""
-                                nearby_data.append({"Score": f"{prefix}{p}", "Record": rec})
+                                nearby_data.append({"Score": f"{prefix}{p}", "Record": rec_disp})
                     
-                    # DataFrameにして表示 (インデックスなし)
                     st.table(pd.DataFrame(nearby_data).set_index("Score"))
 
                     # === 2. 同スコアの他種目比較 (主要種目のみ) ===
                     st.markdown(f"**{get_text('comparison_header', lang_choice)}** ({score} pts)")
                     
-                    score_row = df[df[points_col] == score]
+                    score_row = df[df["Points_Num"] == score]
                     
                     if not score_row.empty:
                         row_data = score_row.iloc[0]
@@ -598,26 +607,21 @@ if df is not None:
                                         val = row_data[e_key]
                                         if pd.notna(val) and val != "-":
                                             d_name = get_display_name(e_key, lang_choice)
-                                            # 秒種目の整形
-                                            if get_event_type(e_key) == "time_s":
-                                                try:
-                                                    f_val = float(val)
-                                                    val = f"{f_val:.2f}"
-                                                except: pass
-                                            
-                                            st.markdown(f"- **{d_name}**: {val}")
+                                            # 整形して表示
+                                            e_mode = get_event_type(e_key)
+                                            val_disp = format_display_record(val, e_mode, lang_choice)
+                                            st.markdown(f"- **{d_name}**: {val_disp}")
 
                         sprints = ["100m", "200m", "400m", "110mH", "100mH", "400mH"]
                         middle = ["800m", "1500m", "5000m", "10000m", "3000m SC"]
                         jumps = ["HJ", "PV", "LJ", "TJ"]
                         throws = ["SP", "DT", "HT", "JT"]
-                        road = ["Marathon", "20km W"] # マラソンと競歩
+                        road = ["Marathon", "20km W"] 
                         
                         show_comp_list(comp_cols[0], get_text("comp_sprints", lang_choice), sprints)
                         show_comp_list(comp_cols[0], get_text("comp_middle", lang_choice), middle)
                         show_comp_list(comp_cols[1], get_text("comp_jumps", lang_choice), jumps)
                         show_comp_list(comp_cols[1], get_text("comp_throws", lang_choice), throws)
-                        # ロードは左列に追加
                         show_comp_list(comp_cols[0], get_text("comp_road", lang_choice), road)
                     
                     show_affiliate_links(selected_category, lang_choice)
