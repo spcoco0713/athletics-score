@@ -38,6 +38,7 @@ st.markdown("""
 # ==========================================
 TEXT_RES = {
     "日本語": {
+        "title": "World Athletics スコア計算ツール",  # ← ここが重要です
         "caption": "世界陸連採点表 (Scoring Tables) に基づくスコア検索",
         "select_gender": "性別 (Gender)",
         "men": "男子 (Men)",
@@ -64,6 +65,7 @@ TEXT_RES = {
         "label_pts": "得点"
     },
     "English": {
+        "title": "World Athletics Scoring Calculator", # ← ここが重要です
         "caption": "Calculate points based on World Athletics Scoring Tables.",
         "select_gender": "Gender",
         "men": "Men",
