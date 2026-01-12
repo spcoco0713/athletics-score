@@ -531,6 +531,8 @@ if df is not None:
             if user_val <= 0:
                 st.warning(get_text("warning_input", lang_choice))
             else:
+                # 検索用データフレーム
+                # Points_Numとselected_event_keyを使用
                 temp_df = df[[points_col, "Points_Num", selected_event_key]].copy()
                 temp_df = temp_df[temp_df[selected_event_key] != "-"]
                 temp_df = temp_df.dropna(subset=[selected_event_key])
@@ -542,16 +544,34 @@ if df is not None:
                 else:
                     is_track_event = (mode != "field" and mode != "score")
 
+                    # スコア検索ロジック
                     if is_track_event:
+                        # トラック: 入力タイム以上のタイムの中で最速のものを探す
+                        # (例: 入力10.01 -> 10.01以上で最小のタイムを持つ行)
+                        # しかし、"間の記録" の場合、低い方のスコアをとる必要がある
+                        # 例: 10.00(1001pt), 10.10(1000pt)
+                        # 入力10.01 -> 10.00には届かない -> 1000ptになるべき
+                        # つまり、「入力値以上のタイム（遅い）」の中で、最も速い（小さい）ものを探せばよい
+                        # 10.01以上のタイム -> 10.02, 10.05, 10.10...
+                        # その中で最小 -> 10.02とかあればそれ。なければ10.10
+                        
                         candidates = temp_df[temp_df['val'] >= user_val]
+                        
                         if candidates.empty:
-                            best_match = temp_df.loc[temp_df['val'].idxmax()]
+                            # 該当なし（遅すぎる） -> 最低点
+                             best_match = temp_df.loc[temp_df['val'].idxmax()]
                         else:
                             best_match = candidates.loc[candidates['val'].idxmin()]
                     else:
+                        # フィールド: 入力記録以下の記録の中で、最大のものを探す
+                        # 例: 7m05(1001pt), 7m00(1000pt)
+                        # 入力7m02 -> 7m05に届かない -> 1000pt
+                        # 7m02以下の記録 -> 7m00, 6m95...
+                        # その中で最大 -> 7m00
                         candidates = temp_df[temp_df['val'] <= user_val]
+                        
                         if candidates.empty:
-                            best_match = temp_df.loc[temp_df['val'].idxmin()]
+                             best_match = temp_df.loc[temp_df['val'].idxmin()]
                         else:
                             best_match = candidates.loc[candidates['val'].idxmax()]
 
@@ -573,17 +593,31 @@ if df is not None:
                     
                     # === 1. 上下3つのスコア表示 (前後3点ずつ) ===
                     st.markdown(f"**{get_text('nearby_scores', lang_choice)}**")
-                    target_points = range(score - 3, score + 4)
+                    
+                    # ★修正箇所★
+                    # 単純に「スコア±3」ではなく、dfのインデックスを使って「前後3行」を取得する
+                    # まず df を Points_Num でソートする (降順: 点数が高い順)
+                    df_sorted = df.sort_values(by="Points_Num", ascending=False).reset_index(drop=True)
+                    
+                    # 該当スコアの行を探す
+                    # Points_Numが一致する最初の行を取得
+                    # (同じ点数が複数あることは基本ないはずだが、念のため)
+                    match_indices = df_sorted.index[df_sorted["Points_Num"] == score].tolist()
                     
                     nearby_data = []
-                    for p in sorted(target_points, reverse=True):
-                        # 数値化した Points_Num 列で検索
-                        row = df[df["Points_Num"] == p]
+                    if match_indices:
+                        center_idx = match_indices[0]
+                        # 前後3行のインデックス範囲を決定
+                        start_idx = max(0, center_idx - 3)
+                        end_idx = min(len(df_sorted), center_idx + 4) # +4 because slice is exclusive
                         
-                        if not row.empty:
-                            rec = row.iloc[0][selected_event_key]
+                        target_rows = df_sorted.iloc[start_idx:end_idx]
+                        
+                        for _, row in target_rows.iterrows():
+                            p = row["Points_Num"]
+                            rec = row[selected_event_key]
+                            
                             if pd.notna(rec) and rec != "-":
-                                # 整形
                                 rec_disp = format_display_record(rec, mode, lang_choice)
                                 prefix = "👉 " if p == score else ""
                                 nearby_data.append({"Score": f"{prefix}{p}", "Record": rec_disp})
@@ -592,6 +626,9 @@ if df is not None:
 
                     # === 2. 同スコアの他種目比較 (主要種目のみ) ===
                     st.markdown(f"**{get_text('comparison_header', lang_choice)}** ({score} pts)")
+                    
+                    # 比較用: マラソンと競歩を追加したリストを使用
+                    comparison_events = OLYMPIC_EVENTS_FOR_COMPARE
                     
                     score_row = df[df["Points_Num"] == score]
                     
@@ -607,7 +644,6 @@ if df is not None:
                                         val = row_data[e_key]
                                         if pd.notna(val) and val != "-":
                                             d_name = get_display_name(e_key, lang_choice)
-                                            # 整形して表示
                                             e_mode = get_event_type(e_key)
                                             val_disp = format_display_record(val, e_mode, lang_choice)
                                             st.markdown(f"- **{d_name}**: {val_disp}")
