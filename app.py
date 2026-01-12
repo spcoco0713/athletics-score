@@ -412,6 +412,8 @@ def format_display_record(val, mode, lang_code):
         
     # フィールド (7.75)
     elif mode == "field":
+        # 既に整形されている場合もあるが、数値化して再整形も可能
+        # ここでは単純に単位をつける
         return str(val) + unit_m
         
     # スコア (8000)
