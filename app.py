@@ -10,12 +10,12 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CSSで余白を削減してコンパクトにする ---
+# --- CSSで余白を調整 ---
 st.markdown("""
     <style>
-        /* アプリ全体の余白を削る */
+        /* アプリ全体の余白調整 */
         .block-container {
-            padding-top: 1rem;
+            padding-top: 3rem; /* 文字切れを防ぐため少し広げました */
             padding-bottom: 1rem;
             padding-left: 1rem;
             padding-right: 1rem;
@@ -38,7 +38,7 @@ st.markdown("""
 TEXT_RES = {
     "日本語": {
         "title": "World Athletics スコア計算ツール",
-        "caption": "男子公式採点表 (Men's Scoring Tables) に基づくスコア検索",
+        "caption": "男子公式採点表 (Men's Scoring Tables) に基づくスコア検索<br>※サイドバー(左上)で言語(English)を切り替えられます。",
         "select_category": "カテゴリを選択",
         "no_category_data": "このカテゴリの種目データがありません。",
         "select_event": "種目を選択",
@@ -61,7 +61,7 @@ TEXT_RES = {
     },
     "English": {
         "title": "World Athletics Scoring Calculator",
-        "caption": "Calculate points based on World Athletics Scoring Tables (Men's).",
+        "caption": "Calculate points based on World Athletics Scoring Tables (Men's).<br>※You can change the language to Japanese in the sidebar.",
         "select_category": "Select Category",
         "no_category_data": "No data available for this category.",
         "select_event": "Select Event",
@@ -330,7 +330,7 @@ with st.sidebar:
 
 # --- メイン画面 ---
 st.title(get_text("title", lang_choice))
-st.caption(get_text("caption", lang_choice))
+st.caption(get_text("caption", lang_choice), unsafe_allow_html=True)
 
 df, points_col = load_data()
 
