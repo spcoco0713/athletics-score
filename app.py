@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CSSで余白を調整 (コンパクト化 & ラジオボタン調整 & フッター非表示) ---
+# --- CSSで余白を調整 (コンパクト化) ---
 st.markdown("""
     <style>
         .block-container {
@@ -23,20 +23,16 @@ st.markdown("""
             font-size: 1.6rem !important;
             margin-bottom: 0.5rem !important;
         }
-        /* ラジオボタンの余白を詰める */
         .stRadio {
             margin-top: -10px;
         }
         .st-emotion-cache-1y4p8pa {
             padding: 1rem 0.5rem;
         }
-        
-        /* フッター (Built with Streamlit) を非表示にする */
-        footer {
-            visibility: hidden;
+        /* テーブルのフォントサイズ調整 */
+        .stTable {
+            font-size: 0.9rem;
         }
-        /* 右上のハンバーガーメニューも消したい場合は以下を追加 */
-        /* #MainMenu {visibility: hidden;} */
     </style>
 """, unsafe_allow_html=True)
 
@@ -45,6 +41,7 @@ st.markdown("""
 # ==========================================
 TEXT_RES = {
     "日本語": {
+        "caption": "世界陸連採点表 (Scoring Tables) に基づくスコア検索",
         "select_gender": "性別 (Gender)",
         "men": "男子 (Men)",
         "women": "女子 (Women)",
@@ -56,7 +53,7 @@ TEXT_RES = {
         "warning_input": "0より大きい数値を入力してください。",
         "result_header": "推定スコア: :blue[{} 点]",
         "input_label": "入力記録: {}",
-        "approx_label": "採点表の近似値: {} ({}点)",
+        "approx_label": "該当するスコア: {}点 (記録: {})",
         "affiliate_header": "🛒 記録向上のための厳選アイテム",
         "affiliate_caption": "※{}選手におすすめのギア",
         "affiliate_common_header": "🥤 全アスリートにおすすめ",
@@ -64,12 +61,19 @@ TEXT_RES = {
         "error_no_file": "現在、{} のデータファイル (CSV) が見つかりません。",
         "error_wait": "※管理者がデータをアップロードするまでお待ちください。",
         "error_system": "システムエラー: データファイルが見つかりません。",
-        # 入力ラベル
         "label_m": "メートル (m)", "label_cm": "センチ (cm)",
         "label_h": "時間", "label_min": "分", "label_sec": "秒", "label_cs": "1/100秒",
-        "label_pts": "得点"
+        "label_pts": "得点",
+        # 追加機能用テキスト
+        "nearby_scores": "📊 前後のスコア",
+        "comparison_header": "🔄 同スコアの他種目記録 (主要種目)",
+        "comp_sprints": "短距離",
+        "comp_middle": "中長距離",
+        "comp_jumps": "跳躍",
+        "comp_throws": "投てき"
     },
     "English": {
+        "caption": "Calculate points based on World Athletics Scoring Tables.",
         "select_gender": "Gender",
         "men": "Men",
         "women": "Women",
@@ -81,7 +85,7 @@ TEXT_RES = {
         "warning_input": "Please enter a value greater than 0.",
         "result_header": "Estimated Score: :blue[{} pts]",
         "input_label": "Input: {}",
-        "approx_label": "Nearest table value: {} ({} pts)",
+        "approx_label": "Score found: {} pts (Record: {})",
         "affiliate_header": "🛒 Recommended Gear",
         "affiliate_caption": "※Gear for {} athletes",
         "affiliate_common_header": "🥤 For All Athletes",
@@ -89,10 +93,16 @@ TEXT_RES = {
         "error_no_file": "Data file (CSV) for {} not found.",
         "error_wait": "Please wait for the administrator to upload data.",
         "error_system": "System Error: Data file not found.",
-        # Input Labels
         "label_m": "Meters (m)", "label_cm": "Centimeters (cm)",
         "label_h": "Hours", "label_min": "Minutes", "label_sec": "Seconds", "label_cs": "1/100 sec",
-        "label_pts": "Points"
+        "label_pts": "Points",
+        # Additional text
+        "nearby_scores": "📊 Nearby Scores",
+        "comparison_header": "🔄 Equivalent Performance (Olympic Events)",
+        "comp_sprints": "Sprints",
+        "comp_middle": "Middle/Long",
+        "comp_jumps": "Jumps",
+        "comp_throws": "Throws"
     }
 }
 
@@ -287,8 +297,19 @@ CUSTOM_SORT_ORDER = [
     "4x100m", "4x400m", "4x400mix", "4x200m", "4x800m", "4x1500m", "Distance Medley Relay", "Sprint Medley Relay"
 ]
 
+# ==========================================
+# ★ 比較用 主要種目リスト (Olympic Events)
+# ==========================================
+OLYMPIC_EVENTS_FOR_COMPARE = [
+    "100m", "200m", "400m", 
+    "800m", "1500m", "5000m", "10000m",
+    "110mH", "100mH", "400mH", "3000m SC",
+    "HJ", "PV", "LJ", "TJ",
+    "SP", "DT", "HT", "JT",
+    "Marathon", "20km W"
+]
+
 def get_display_name(raw_name, lang_code):
-    """言語設定に基づいて表示名を決定する"""
     base_name = raw_name.replace(" sh", " (ST)")
     if lang_code == "日本語":
         return EVENT_TRANSLATION_JP.get(raw_name, base_name)
@@ -322,19 +343,12 @@ def classify_event_en(event_name_en):
 # --- データの読み込みロジック (男女対応) ---
 @st.cache_data
 def load_data(gender_prefix):
-    # ファイル名パターン: M_ALL_*.csv または W_ALL_*.csv
     file_pattern = f"{gender_prefix}_ALL_*.csv"
     csv_files = glob.glob(file_pattern)
-    
-    if not csv_files:
-        return None, None
-    
-    # 最新ファイルを自動選択
+    if not csv_files: return None, None
     latest_file = sorted(csv_files)[-1]
-    
     try:
         df = pd.read_csv(latest_file)
-        # ポイント列を探す
         points_col = [c for c in df.columns if c.lower() in ["points", "pts", "score"]][0]
         return df, points_col
     except Exception:
@@ -369,26 +383,18 @@ def get_event_type(event_name):
     if '5 km' in name or '10 km' in name: return "time_ms"
     return "time_s"
 
-# --- メイン画面 (タイトルは固定・日英併記) ---
+# --- メイン画面 ---
 st.title("World Athletics Scoring Calculator / スコア検索ツール")
 st.caption("Calculate points based on World Athletics Scoring Tables. / 世界陸連採点表に基づくスコア検索")
 
-# --- 設定エリア (メイン画面上部・サイドバーなし) ---
+# --- 設定エリア ---
 setting_cols = st.columns(2)
-
 with setting_cols[0]:
-    # 言語選択 (初期値 English)
     lang_choice = st.radio("Language / 言語", ["English", "日本語"], horizontal=True)
-
 with setting_cols[1]:
-    # 性別選択
     gender_label = get_text("select_gender", lang_choice)
-    # 選択肢の表示も言語によって変える (例: Men -> 男子 (Men))
-    # ※get_textは翻訳辞書から取得する
     gender_opts = [get_text("men", lang_choice), get_text("women", lang_choice)]
     gender_choice = st.radio(gender_label, gender_opts, horizontal=True)
-    
-    # 選択肢の文字列に "Men" または "男子" が含まれていれば男子データ
     if "Men" in gender_choice or "男子" in gender_choice:
         gender_prefix = "M"
     else:
@@ -421,35 +427,18 @@ if df is not None:
 
     for cat in categorized_events:
         categorized_events[cat].sort()
-        top_keys = [
-            "100m", "200m", "400m", "100mH", "110mH", "400mH", 
-            "800m", "1500m", "5000m", "10000m", "3000m SC",
-            "HJ", "PV", "LJ", "TJ", "SP", "DT", "HT", "JT",
-            "Dec.", "Hept.", "Marathon", "HM",
-            "5000mW", "10000mW", "20km W", "35km W", "50km W"
-        ]
         priority_items = []
         other_items = []
         for disp_name in categorized_events[cat]:
             original_key = all_events_map[disp_name]
-            if original_key in top_keys:
+            clean_key = original_key.replace(" sh", "")
+            if clean_key in CUSTOM_SORT_ORDER:
                 priority_items.append(disp_name)
             else:
                 other_items.append(disp_name)
         
-        # 2. ソート順ヘルパー関数 (カテゴリ内)
-        def get_sort_index(d_name):
-            orig_key = all_events_map[d_name]
-            clean_key = orig_key.replace(" sh", "")
-            if clean_key in CUSTOM_SORT_ORDER:
-                return CUSTOM_SORT_ORDER.index(clean_key)
-            return 9999
-
-        # 3. それぞれソート
-        priority_items.sort(key=get_sort_index)
-        other_items.sort(key=get_sort_index)
-        
-        # 4. 結合
+        priority_items.sort(key=lambda x: CUSTOM_SORT_ORDER.index(all_events_map[x].replace(" sh", "")))
+        other_items.sort(key=lambda x: CUSTOM_SORT_ORDER.index(all_events_map[x].replace(" sh", "")) if all_events_map[x].replace(" sh", "") in CUSTOM_SORT_ORDER else 9999)
         categorized_events[cat] = priority_items + other_items
 
     selected_category = st.radio(get_text("select_category", lang_choice), current_categories, horizontal=True)
@@ -513,15 +502,101 @@ if df is not None:
                 if temp_df.empty:
                     st.error("Data not found.")
                 else:
-                    temp_df['diff'] = (temp_df['val'] - user_val).abs()
-                    best_match = temp_df.loc[temp_df['diff'].idxmin()]
+                    # ===============================================
+                    # ★ ロジック変更箇所
+                    # ===============================================
+                    # 入力された記録「より悪い」記録を除外し、
+                    # 残った中で「最も良いスコア」を取得する
+                    # (トラック種目はタイムが小さい方が良い、フィールドは大きい方が良い)
+
+                    is_track_event = (mode != "field" and mode != "score")
+
+                    if is_track_event:
+                        # トラック: 入力タイム以上のタイム(遅いタイム)の中から、最小(最速)のものを選ぶ
+                        # 例: 入力10.01 -> 10.01以上のタイムを持つ行(10.02, 10.05...)はダメ
+                        #     入力10.01以下のタイムを持つ行(10.00, 9.99...)はOK
+                        #     -> 入力値「以下」のタイムの中で、最大のタイム(最も10.01に近い)を探す?
+                        #     いや、逆。
+                        #     10.00 (1001点), 10.10 (1000点)
+                        #     入力 10.01 は 10.00 に届いていない -> 1000点になるべき
+                        #     つまり、「入力値以上のタイム(遅い)」の中で、最も速い(小さい)ものを探す
+                        
+                        candidates = temp_df[temp_df['val'] >= user_val]
+                        
+                        if candidates.empty:
+                            # 入力値が遅すぎて圏外の場合 -> 最低点
+                            best_match = temp_df.loc[temp_df['val'].idxmax()] # 一番遅いタイム
+                        else:
+                            # 候補の中で一番速いタイム(値が最小)を探す
+                            best_match = candidates.loc[candidates['val'].idxmin()]
+                            
+                    else:
+                        # フィールド: 入力記録以下の記録(低い記録)の中で、最大(最高)のものを選ぶ
+                        # 例: 7m05 (1001点), 7m00 (1000点)
+                        #     入力 7m02 は 7m05 に届いていない -> 1000点になるべき
+                        #     つまり、「入力値以下の記録」の中で、最も良い(大きい)ものを探す
+                        
+                        candidates = temp_df[temp_df['val'] <= user_val]
+                        
+                        if candidates.empty:
+                            # 入力値が低すぎて圏外の場合 -> 最低点
+                            best_match = temp_df.loc[temp_df['val'].idxmin()] # 一番低い記録
+                        else:
+                            # 候補の中で一番良い記録(値が最大)を探す
+                            best_match = candidates.loc[candidates['val'].idxmax()]
+
                     score = int(best_match[points_col])
                     table_record = best_match[selected_event_key]
                     
                     st.divider()
                     st.subheader(get_text("result_header", lang_choice).format(score))
                     st.write(get_text("input_label", lang_choice).format(input_display_str))
-                    st.caption(get_text("approx_label", lang_choice).format(table_record, score))
+                    st.caption(get_text("approx_label", lang_choice).format(score, table_record))
+                    
+                    # === 1. 上下3つのスコア表示 ===
+                    st.markdown(f"**{get_text('nearby_scores', lang_choice)}**")
+                    target_points = range(score - 3, score + 4)
+                    
+                    nearby_data = []
+                    for p in sorted(target_points, reverse=True):
+                        row = df[df[points_col] == p]
+                        if not row.empty:
+                            rec = row.iloc[0][selected_event_key]
+                            if pd.notna(rec) and rec != "-":
+                                prefix = "👉 " if p == score else ""
+                                nearby_data.append({"Score": f"{prefix}{p}", "Record": rec})
+                    
+                    st.table(pd.DataFrame(nearby_data))
+
+                    # === 2. 同スコアの他種目比較 (主要種目のみ) ===
+                    st.markdown(f"**{get_text('comparison_header', lang_choice)}** ({score} pts)")
+                    
+                    score_row = df[df[points_col] == score]
+                    
+                    if not score_row.empty:
+                        row_data = score_row.iloc[0]
+                        comp_cols = st.columns(2)
+                        
+                        def show_comp_list(col_obj, title, events):
+                            with col_obj:
+                                st.caption(f"▼ {title}")
+                                for e_key in events:
+                                    if e_key in df.columns:
+                                        val = row_data[e_key]
+                                        if pd.notna(val) and val != "-":
+                                            d_name = get_display_name(e_key, lang_choice)
+                                            st.markdown(f"- **{d_name}**: {val}")
+
+                        sprints = ["100m", "200m", "400m", "110mH", "100mH", "400mH"]
+                        middle = ["800m", "1500m", "5000m", "10000m", "3000m SC"]
+                        jumps = ["HJ", "PV", "LJ", "TJ"]
+                        throws = ["SP", "DT", "HT", "JT"]
+                        
+                        show_comp_list(comp_cols[0], get_text("comp_sprints", lang_choice), sprints)
+                        show_comp_list(comp_cols[0], get_text("comp_middle", lang_choice), middle)
+                        show_comp_list(comp_cols[1], get_text("comp_jumps", lang_choice), jumps)
+                        show_comp_list(comp_cols[1], get_text("comp_throws", lang_choice), throws)
+
                     
                     show_affiliate_links(selected_category, lang_choice)
 
