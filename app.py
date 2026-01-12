@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CSSで余白を調整 (コンパクト化 & ラジオボタン調整) ---
+# --- CSSで余白を調整 (コンパクト化 & ラジオボタン調整 & フッター非表示) ---
 st.markdown("""
     <style>
         .block-container {
@@ -30,6 +30,13 @@ st.markdown("""
         .st-emotion-cache-1y4p8pa {
             padding: 1rem 0.5rem;
         }
+        
+        /* フッター (Built with Streamlit) を非表示にする */
+        footer {
+            visibility: hidden;
+        }
+        /* 右上のハンバーガーメニューも消したい場合は以下を追加 */
+        /* #MainMenu {visibility: hidden;} */
     </style>
 """, unsafe_allow_html=True)
 
@@ -45,7 +52,7 @@ TEXT_RES = {
         "no_category_data": "このカテゴリの種目データがありません。",
         "select_event": "種目を選択",
         "input_header": "{} の記録入力",
-        "calc_button": "スコアを計算する",
+        "calc_button": "スコアを検索する",
         "warning_input": "0より大きい数値を入力してください。",
         "result_header": "推定スコア: :blue[{} 点]",
         "input_label": "入力記録: {}",
@@ -362,7 +369,7 @@ def get_event_type(event_name):
     if '5 km' in name or '10 km' in name: return "time_ms"
     return "time_s"
 
-# --- メイン画面 (タイトルと説明文は固定・併記) ---
+# --- メイン画面 (タイトルは固定・日英併記) ---
 st.title("World Athletics Scoring Calculator / スコア検索ツール")
 st.caption("Calculate points based on World Athletics Scoring Tables. / 世界陸連採点表に基づくスコア検索")
 
@@ -521,4 +528,3 @@ if df is not None:
 else:
     st.info(get_text("error_no_file", lang_choice).format(gender_choice))
     st.caption(get_text("error_wait", lang_choice))
-
