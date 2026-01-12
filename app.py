@@ -363,7 +363,7 @@ def get_event_type(event_name):
     return "time_s"
 
 # --- メイン画面 (タイトルと説明文は固定・併記) ---
-st.title("World Athletics Scoring Calculator / スコア計算ツール")
+st.title("World Athletics Scoring Calculator / スコア検索ツール")
 st.caption("Calculate points based on World Athletics Scoring Tables. / 世界陸連採点表に基づくスコア検索")
 
 # --- 設定エリア (メイン画面上部・サイドバーなし) ---
@@ -521,3 +521,4 @@ if df is not None:
 else:
     st.info(get_text("error_no_file", lang_choice).format(gender_choice))
     st.caption(get_text("error_wait", lang_choice))
+
