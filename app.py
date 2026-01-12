@@ -38,8 +38,6 @@ st.markdown("""
 # ==========================================
 TEXT_RES = {
     "日本語": {
-        "title": "World Athletics スコア計算ツール",  # ← ここが重要です
-        "caption": "世界陸連採点表 (Scoring Tables) に基づくスコア検索",
         "select_gender": "性別 (Gender)",
         "men": "男子 (Men)",
         "women": "女子 (Women)",
@@ -65,8 +63,6 @@ TEXT_RES = {
         "label_pts": "得点"
     },
     "English": {
-        "title": "World Athletics Scoring Calculator", # ← ここが重要です
-        "caption": "Calculate points based on World Athletics Scoring Tables.",
         "select_gender": "Gender",
         "men": "Men",
         "women": "Women",
@@ -366,31 +362,26 @@ def get_event_type(event_name):
     if '5 km' in name or '10 km' in name: return "time_ms"
     return "time_s"
 
-# --- サイドバー設定 ---
-with st.sidebar:
-    st.header("Settings")
-    # 初期選択を「English」に変更
-    lang_choice = st.radio("Language", ["English", "日本語"])
+# --- メイン画面 (タイトルと説明文は固定・併記) ---
+st.title("World Athletics Scoring Calculator / スコア計算ツール")
+st.caption("Calculate points based on World Athletics Scoring Tables. / 世界陸連採点表に基づくスコア検索")
 
-# --- メイン画面 ---
-st.title(get_text("title", lang_choice))
-st.caption(get_text("caption", lang_choice), unsafe_allow_html=True)
-
-# --- 設定エリア (メイン画面上部へ移動) ---
+# --- 設定エリア (メイン画面上部・サイドバーなし) ---
 setting_cols = st.columns(2)
 
 with setting_cols[0]:
-    # 言語選択
-    # 初期値を「English」に合わせるため、ラジオボタンの順序を ["English", "日本語"] に変更
+    # 言語選択 (初期値 English)
     lang_choice = st.radio("Language / 言語", ["English", "日本語"], horizontal=True)
 
 with setting_cols[1]:
     # 性別選択
     gender_label = get_text("select_gender", lang_choice)
-    # 選択肢の順序も言語に合わせて生成されるが、Englishなら "Men" が先頭に来る
+    # 選択肢の表示も言語によって変える (例: Men -> 男子 (Men))
+    # ※get_textは翻訳辞書から取得する
     gender_opts = [get_text("men", lang_choice), get_text("women", lang_choice)]
     gender_choice = st.radio(gender_label, gender_opts, horizontal=True)
     
+    # 選択肢の文字列に "Men" または "男子" が含まれていれば男子データ
     if "Men" in gender_choice or "男子" in gender_choice:
         gender_prefix = "M"
     else:
